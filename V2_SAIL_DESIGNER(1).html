@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Junk Rig Sail Designer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1a18;--surface:#222220;--panel:#2a2a27;
+    --border:#3a3a36;--ink:#e8e4d8;--ink-dim:#9a9488;
+    --accent:#c8a96e;--accent-dim:#6a5830;
+    --sel:#4a90b0;--sel-bg:rgba(74,144,176,.15);
+    --top-accent:#7090c8;--top-dim:#304060;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  input,select{-webkit-user-select:auto;user-select:auto}
+  body{background:var(--bg);color:var(--ink);font-family:'Share Tech Mono',monospace;
+    height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header{padding:10px 22px;background:var(--surface);border-bottom:1px solid var(--border);
+    display:flex;align-items:baseline;gap:16px;flex-shrink:0}
+  header h1{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;
+    color:var(--accent);letter-spacing:.05em}
+  header .sub{font-size:.62rem;color:var(--ink-dim);letter-spacing:.12em;text-transform:uppercase}
+  .app{display:flex;flex:1;overflow:hidden}
+
+  /* ── sidebar ── */
+  .sidebar{width:258px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+    overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+  .cg-label{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);
+    padding-bottom:4px;border-bottom:1px solid var(--accent-dim);margin-bottom:4px}
+  .cg-label.blue{color:var(--top-accent);border-bottom-color:var(--top-dim)}
+  .ctrl{display:flex;flex-direction:column;gap:3px}
+  .ctrl>label,.ctrl>.clabel{font-size:.64rem;color:var(--ink-dim)}
+  .ctrl-row{display:flex;align-items:center;gap:7px}
+  input[type=range]{flex:1;-webkit-appearance:none;height:2px;background:var(--border);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;background:var(--accent);cursor:pointer}
+  input[type=range].blue-thumb::-webkit-slider-thumb{background:var(--top-accent)}
+  input[type=number]{width:54px;background:var(--panel);border:1px solid var(--border);
+    color:var(--ink);font-family:'Share Tech Mono',monospace;font-size:.77rem;padding:3px 5px;outline:none}
+  input[type=number]:focus{border-color:var(--accent)}
+  select{background:var(--panel);border:1px solid var(--border);color:var(--ink);
+    font-family:'Share Tech Mono',monospace;font-size:.77rem;padding:3px 5px;outline:none;width:100%}
+  select:focus{border-color:var(--accent)}
+  .readouts{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+  .ro{background:var(--panel);border:1px solid var(--border);padding:4px 6px}
+  .ro.wide{grid-column:1/-1}
+  .ro-label{font-size:.53rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em}
+  .ro-val{font-size:.77rem;color:var(--accent)}
+  .toggles{display:flex;flex-direction:column;gap:5px}
+  .toggles label,.chk-label{display:flex;align-items:center;gap:7px;font-size:.65rem;color:var(--ink-dim);cursor:pointer}
+  input[type=checkbox]{accent-color:var(--accent);cursor:pointer}
+  input[type=checkbox].blue{accent-color:var(--top-accent)}
+  hr.div{border:none;border-top:1px solid var(--border);margin:0}
+
+  /* top panel config blocks */
+  .tp-block{background:var(--panel);border:1px solid var(--top-dim);padding:8px 9px;
+    display:flex;flex-direction:column;gap:5px;margin-bottom:4px}
+  .tp-block-title{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--top-accent)}
+
+  /* panel buttons */
+  .panel-btn-grid{display:flex;flex-direction:column;gap:3px}
+  .panel-btn{width:100%;padding:5px 8px;background:var(--panel);border:1px solid var(--border);
+    color:var(--ink-dim);font-family:'Share Tech Mono',monospace;font-size:.65rem;
+    cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;
+    transition:all .12s}
+  .panel-btn:hover{border-color:var(--accent);color:var(--ink)}
+  .panel-btn.active{border-color:var(--sel);color:var(--sel);background:var(--sel-bg)}
+  .panel-btn.top-panel{border-color:var(--top-dim)}
+  .panel-btn.top-panel:hover{border-color:var(--top-accent)}
+  .panel-btn.top-panel.active{border-color:var(--top-accent);color:var(--top-accent);background:rgba(70,100,180,.1)}
+  .pbadges{display:flex;gap:3px}
+  .pbadge{font-size:.51rem;padding:1px 4px;border:1px solid;letter-spacing:.04em}
+  .pbadge.shaped{border-color:#7aaa60;color:#7aaa60}
+  .pbadge.flat{border-color:#3a5060;color:#3a5060}
+
+  /* inspector */
+  #inspector{display:none;flex-direction:column;gap:7px}
+  #inspector.vis{display:flex}
+  .insp-hdr{font-size:.68rem;color:var(--sel);letter-spacing:.08em;
+    padding:5px 8px;background:rgba(74,144,176,.1);border:1px solid var(--sel)}
+  .insp-hdr.blue{color:var(--top-accent);background:rgba(70,100,180,.1);border-color:var(--top-accent)}
+  .edge-block{background:var(--panel);border:1px solid var(--border);padding:7px 9px;
+    display:flex;flex-direction:column;gap:5px}
+  .edge-title{font-size:.59rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);
+    display:flex;justify-content:space-between;align-items:center}
+  .ebadge{font-size:.53rem;padding:1px 5px;border:1px solid}
+  .ebadge.shaped{border-color:#7aaa60;color:#7aaa60}
+  .ebadge.flat{border-color:#3a5060;color:#3a5060}
+  .edge-ctrl{display:flex;flex-direction:column;gap:3px}
+  .edge-ctrl label{font-size:.59rem;color:var(--ink-dim)}
+  .edge-ctrl .ctrl-row input[type=number]{width:50px;font-size:.73rem}
+  .apex-lbl{font-size:.55rem;color:var(--ink-dim);margin-top:1px}
+  .reset-btn{width:100%;padding:4px 0;font-family:'Share Tech Mono',monospace;font-size:.59rem;
+    letter-spacing:.07em;text-transform:uppercase;background:var(--panel);
+    border:1px solid var(--border);color:var(--ink-dim);cursor:pointer}
+  .reset-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* main */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+  .tab{padding:7px 18px;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;
+    cursor:pointer;color:var(--ink-dim);border-right:1px solid var(--border);
+    border-bottom:2px solid transparent;transition:all .15s}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--panel)}
+  .view{flex:1;display:none;overflow:hidden;flex-direction:column}
+  .view.active{display:flex}
+  .canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);cursor:grab;touch-action:none}
+  .canvas-wrap:active{cursor:grabbing}
+  .canvas-wrap::before{content:'';position:absolute;inset:0;
+    background-image:radial-gradient(circle,#38362e 1px,transparent 1px);
+    background-size:30px 30px;pointer-events:none}
+
+  /* ── Mobile layout ── */
+  @media (max-width:640px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;max-height:42vh;border-right:none;border-bottom:1px solid var(--border)}
+  }
+  #asmCanvas{position:absolute;top:0;left:0}
+  .panel-view-inner{flex:1;overflow:auto;padding:18px;
+    display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start;background:var(--bg)}
+  .panel-card{background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+  .panel-card.top-card{border-color:var(--top-dim)}
+  .panel-card-header{padding:5px 9px;border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center}
+  .panel-card-title{font-size:.66rem;color:var(--accent);letter-spacing:.07em}
+  .panel-card-title.blue{color:var(--top-accent)}
+  .panel-card-type{font-size:.56rem}
+  .panel-card-footer{padding:4px 7px;border-top:1px solid var(--border);
+    display:flex;gap:4px;background:var(--panel)}
+  .exp-btn{flex:1;padding:3px 0;font-family:'Share Tech Mono',monospace;font-size:.58rem;
+    letter-spacing:.05em;background:var(--panel);border:1px solid var(--border);
+    color:var(--ink-dim);cursor:pointer;text-transform:uppercase;transition:all .12s}
+  .exp-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .statusbar{flex-shrink:0;padding:4px 14px;background:var(--surface);
+    border-top:1px solid var(--border);font-size:.59rem;color:var(--ink-dim);
+    display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .statusbar b{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Junk Rig Sail Designer</h1>
+  <span class="sub" id="viewLabel">Assembly View</span>
+</header>
+<div class="app">
+<aside class="sidebar">
+
+  <!-- Global dims -->
+  <div>
+    <div class="cg-label">Main Sail</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div class="ctrl"><label>Foot length (ft)</label>
+        <div class="ctrl-row">
+          <input type="range" id="sldFoot" min="4" max="24" step="0.5" value="12">
+          <input type="number" id="numFoot" min="4" max="24" step="0.5" value="12">
+        </div>
+      </div>
+      <div class="ctrl"><label>Number of panels</label>
+        <div class="ctrl-row">
+          <input type="range" id="sldPanels" min="3" max="12" step="1" value="6">
+          <input type="number" id="numPanels" min="3" max="12" step="1" value="6">
+        </div>
+      </div>
+      <div class="ctrl" id="seamRow" style="display:none"><label>Seam allowance (in)</label>
+        <div class="ctrl-row">
+          <input type="range" id="sldSeam" min="0.25" max="2" step="0.25" value="1">
+          <input type="number" id="numSeam" min="0.25" max="2" step="0.25" value="1">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Derived readouts -->
+  <div>
+    <div class="cg-label">Derived</div>
+    <div class="readouts">
+      <div class="ro"><div class="ro-label">Height</div><div class="ro-val" id="rdH">—</div></div>
+      <div class="ro"><div class="ro-label">Panel ht</div><div class="ro-val" id="rdPH">—</div></div>
+      <div class="ro"><div class="ro-label">Def. camber</div><div class="ro-val" id="rdC">—</div></div>
+      <div class="ro"><div class="ro-label">Def. apex</div><div class="ro-val" id="rdAp">—</div></div>
+      <div class="ro"><div class="ro-label">Key panel</div><div class="ro-val" id="rdKP">—</div></div>
+      <div class="ro wide"><div class="ro-label">Total sail area</div><div class="ro-val" id="rdSA">—</div></div>
+    </div>
+  </div>
+
+  <!-- Angled top panels -->
+  <div>
+    <div class="cg-label blue">Fan Head</div>
+    <div class="toggles" style="margin-bottom:7px">
+      <label><input type="checkbox" class="blue" id="chkTopPanels"> Angled batten + Yard</label>
+    </div>
+    <div id="topPanelConfigs"></div>
+  </div>
+
+  <!-- Display toggles -->
+  <div id="asmToggles">
+    <div class="cg-label">Display</div>
+    <div class="toggles">
+      <label><input type="checkbox" id="chkDims" checked> Dimensions</label>
+      <label><input type="checkbox" id="chkCamber" checked> Camber indicators</label>
+      <label><input type="checkbox" id="chkLabels" checked> Panel labels</label>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- Panel buttons -->
+  <div>
+    <div class="cg-label">Panels</div>
+    <div class="panel-btn-grid" id="panelBtnGrid"></div>
+  </div>
+
+  <!-- Inspector -->
+  <div id="inspector">
+    <div class="insp-hdr" id="inspHdr">Panel —</div>
+    <div class="edge-block">
+      <div class="edge-title">Top batten edge <span class="ebadge flat" id="topBadge">FLAT</span></div>
+      <label class="chk-label"><input type="checkbox" id="topEnabled"> Shaped</label>
+      <div id="topCtrls" style="display:none;flex-direction:column;gap:5px">
+        <div class="edge-ctrl"><label>Depth (in)</label>
+          <div class="ctrl-row">
+            <input type="range" id="topDepSld" min="0.25" max="8" step="0.25" value="4">
+            <input type="number" id="topDepNum" min="0.25" max="8" step="0.25" value="4">
+          </div>
+        </div>
+        <div class="edge-ctrl"><label>Apex (ratio of batten length)</label>
+          <div class="ctrl-row">
+            <input type="range" id="topApxSld" min="0.05" max="0.95" step="0.01" value="0.333">
+            <input type="number" id="topApxNum" min="0.05" max="0.95" step="0.01" value="0.333">
+          </div>
+          <div class="apex-lbl" id="topApxLbl">— ft from luff</div>
+        </div>
+        <div class="edge-ctrl"><label>Luff-side curve (− hollow / + round)</label>
+          <div class="ctrl-row">
+            <input type="range" id="topLuffBendSld" min="-0.30" max="0.30" step="0.05" value="0">
+            <input type="number" id="topLuffBendNum" min="-0.30" max="0.30" step="0.05" value="0">
+          </div>
+        </div>
+        <div class="edge-ctrl"><label>Leech-side curve (− hollow / + round)</label>
+          <div class="ctrl-row">
+            <input type="range" id="topLeechBendSld" min="-0.30" max="0.30" step="0.05" value="0">
+            <input type="number" id="topLeechBendNum" min="-0.30" max="0.30" step="0.05" value="0">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="edge-block">
+      <div class="edge-title">Bottom batten edge <span class="ebadge flat" id="botBadge">FLAT</span></div>
+      <label class="chk-label"><input type="checkbox" id="botEnabled"> Shaped</label>
+      <div id="botCtrls" style="display:none;flex-direction:column;gap:5px">
+        <div class="edge-ctrl"><label>Depth (in)</label>
+          <div class="ctrl-row">
+            <input type="range" id="botDepSld" min="0.25" max="8" step="0.25" value="4">
+            <input type="number" id="botDepNum" min="0.25" max="8" step="0.25" value="4">
+          </div>
+        </div>
+        <div class="edge-ctrl"><label>Apex (ratio of batten length)</label>
+          <div class="ctrl-row">
+            <input type="range" id="botApxSld" min="0.05" max="0.95" step="0.01" value="0.333">
+            <input type="number" id="botApxNum" min="0.05" max="0.95" step="0.01" value="0.333">
+          </div>
+          <div class="apex-lbl" id="botApxLbl">— ft from luff</div>
+        </div>
+        <div class="edge-ctrl"><label>Luff-side curve (− hollow / + round)</label>
+          <div class="ctrl-row">
+            <input type="range" id="botLuffBendSld" min="-0.30" max="0.30" step="0.05" value="0">
+            <input type="number" id="botLuffBendNum" min="-0.30" max="0.30" step="0.05" value="0">
+          </div>
+        </div>
+        <div class="edge-ctrl"><label>Leech-side curve (− hollow / + round)</label>
+          <div class="ctrl-row">
+            <input type="range" id="botLeechBendSld" min="-0.30" max="0.30" step="0.05" value="0">
+            <input type="number" id="botLeechBendNum" min="-0.30" max="0.30" step="0.05" value="0">
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="reset-btn" id="resetBtn">Reset panel to defaults</button>
+  </div>
+
+  <hr class="div">
+
+  <div>
+    <div class="cg-label">Legend</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:.63rem;color:var(--ink-dim)">
+        <div style="width:22px;height:10px;background:rgba(200,169,110,.22);border:1px solid #c8a96e;flex-shrink:0"></div>Double-sided
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:.63rem;color:var(--ink-dim)">
+        <div style="width:22px;height:10px;background:rgba(232,228,216,.09);border:1px solid #aaa490;flex-shrink:0"></div>Single-sided
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:.63rem;color:var(--ink-dim)">
+        <div style="width:22px;height:10px;background:rgba(100,150,180,.07);border:1px dashed #5a8090;flex-shrink:0"></div>Flat
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:.63rem;color:var(--ink-dim)">
+        <div style="width:22px;height:10px;background:rgba(70,100,200,.15);border:1px solid #7090c8;flex-shrink:0"></div>Angled top
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<div class="main">
+  <div class="tabs">
+    <div class="tab active" data-view="assembly">Assembly</div>
+    <div class="tab" data-view="panels">Panel Patterns</div>
+  </div>
+  <div class="view active" id="view-assembly">
+    <div class="canvas-wrap" id="asmWrap"><canvas id="asmCanvas"></canvas></div>
+  </div>
+  <div class="view" id="view-panels">
+    <div class="panel-view-inner" id="panelGrid"></div>
+  </div>
+  <div class="statusbar">
+    <span>Foot: <b id="sbFoot">—</b> ft</span>
+    <span>Height: <b id="sbH">—</b> ft</span>
+    <span>Panels: <b id="sbN">—</b></span>
+    <span>Key: <b id="sbK">—</b></span>
+    <span>Area: <b id="sbArea">—</b> ft²</span>
+    <span id="sbHint" style="margin-left:auto;color:#3e3c34">scroll=zoom · drag=pan · dbl-click=fit</span>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let foot=12, nPanels=6, seamIn=1;
+let showDims=true, showCamber=true, showLabels=true;
+let vpX=0, vpY=0, vpScale=40;
+let isPanning=false, didPan=false, dragX=0, dragY=0;
+let selectedPanel=null; // {type:'main'|'top', idx:number}
+let currentView='assembly';
+
+// Batten shape overrides: key=batten index string, value={enabled,depthIn,apexRatio}
+// For main sail: batten 0=head, nPanels=foot/boom
+// apexRatio = fraction of the batten's own length (important for angled panels)
+let battens={};
+
+// Angled top panels config
+// Each panel has: { battLen:ft, angleDeg:degrees }
+//   battLen  = length of THIS panel's batten (the batten at its TOP edge)
+//   angleDeg = angle of that batten above horizontal, rising from luff toward leech
+//
+// Geometry (world coords: x=0 is luff, y=0 is main sail head, y negative = upward):
+//   Batten i has its LUFF end at (0, yLuff[i]) and rises at angleDeg.
+//   Leech end = (battLen*cos(angle),  yLuff - battLen*sin(angle))
+//   The luff of the next panel up starts where this batten's luff end is.
+//   Panel luff height = vertical distance between consecutive luff attachment points.
+//   Since the bottom of each top panel is the PREVIOUS panel's top batten (or the
+//   main head batten for the first panel), and luff is always at x=0, the luff
+//   attachment of each batten is simply stacked: each panel's luff height equals
+//   the vertical component of the batten below it (botBattLen * sin(botAngle)).
+//   Exception: the main head batten is flat (angle=0), so luff height of T1
+//   is determined by how much T1's bottom (main head, angle=0) and T1's top batten differ.
+//   We define luff height as an EXPLICIT control — the user controls batten length
+//   and angle, and the panel height on the luff side is battLen*sin(angleDeg) of the
+//   BOTTOM batten. The luff is continuous vertical.
+//
+// In practice:
+//   yLuff[0] = 0  (main head)
+//   yLuff[i+1] = yLuff[i] - botBattLen[i]*sin(botAngle[i])
+//      where botBattLen[0]=foot, botAngle[0]=0 (flat head batten)
+//            botBattLen[i]=topPanels[i-1].battLen, botAngle[i]=topPanels[i-1].angleDeg
+//   Leech end of panel i's TOP batten:
+//      x = topPanels[i].battLen * cos(topPanels[i].angleDeg * PI/180)
+//      y = yLuff[i+1] - topPanels[i].battLen * sin(topPanels[i].angleDeg * PI/180)
+//   Leech end of panel i's BOTTOM batten:
+//      x = botBattLen[i] * cos(botAngle[i] * PI/180)
+//      y = yLuff[i] - botBattLen[i] * sin(botAngle[i] * PI/180)
+
+// Top section: fixed 2-batten fan head (on/off), treated as ONE panel.
+// Angled batten: length=foot (full boom length), 30°
+// Yard:          length=foot*(10/12), 70°
+// Both luffH=0 (fan from mast head). Scales with foot, remains adjustable.
+// When on, replaces the top main panel (P1) in geometry and area.
+let showTopPanels=false;
+function defaultTopPanels(){
+  return[
+    {battLen:foot,        angleDeg:30, luffH:0},  // T1: angled batten = boom length
+    {battLen:foot*(10/12),angleDeg:70, luffH:0},  // T2: yard = 10/12 of boom
+  ];
+}
+let topPanels=defaultTopPanels();
+// Keep user overrides separate so we can re-scale on foot/panel change
+let topPanelOverrides=[null,null]; // {battLen?, angleDeg?} per panel
+
+// ═══════════════════════════════════════════════
+// GEOMETRY — MAIN SAIL
+// ═══════════════════════════════════════════════
+function computeSail(foot,nPanels){
+  const height=foot*2, panelH=height/nPanels;
+  const defCamberIn=foot/3, defCamberFt=defCamberIn/12;
+  const defApexRatio=1/3;
+  // When fan is on, P1 (i=0) is visually replaced by the fan triangles above.
+  // Exclude it from the rectangular panel list so it doesn't overdraw the fan region.
+  const firstPanel=showTopPanels?1:0;
+  const keyIdx=Math.min(Math.floor((height/3)/panelH),nPanels-2);
+  const nDouble=Math.max(1,Math.ceil(nPanels/6));
+  let dsStart=keyIdx-Math.floor(nDouble/2), dsEnd=dsStart+nDouble-1;
+  if(dsStart<1){dsStart=1;dsEnd=dsStart+nDouble-1;}
+  if(dsEnd>nPanels-2){dsEnd=nPanels-2;dsStart=dsEnd-nDouble+1;}
+  const panels=[];
+  for(let i=firstPanel;i<nPanels;i++){
+    let defType;
+    if(i===firstPanel||i===nPanels-1)       defType='flat';
+    else if(i>=dsStart&&i<=dsEnd)           defType='double';
+    else if(i===dsStart-1||i===dsEnd+1)     defType='single';
+    else                                     defType='flat';
+    panels.push({i,defType,yTop:i*panelH,yBot:(i+1)*panelH});
+  }
+  return{height,panelH,defCamberIn,defCamberFt,defApexRatio,keyIdx,nDouble,dsStart,dsEnd,panels,firstPanel};
+}
+
+function isDefaultShaped(b,s){
+  if(b<=s.firstPanel||b>=nPanels) return false;
+  const above=s.panels.find(p=>p.i===b-1), below=s.panels.find(p=>p.i===b);
+  if(!above||!below) return false;
+  if(above.defType==='double'||below.defType==='double') return true;
+  if(above.defType==='single'&&above.i>=s.dsStart) return true;
+  if(below.defType==='single'&&below.i<s.dsStart)  return true;
+  return false;
+}
+
+function getBatten(b,s){
+  const ov=battens[b];
+  if(ov!==undefined) return{...ov,isOverride:true};
+  return{enabled:isDefaultShaped(b,s),depthIn:s.defCamberIn,
+    depthFt:s.defCamberFt,apexRatio:s.defApexRatio,
+    apexFt:s.defApexRatio*foot,luffBend:0,leechBend:0,isOverride:false};
+}
+
+function getBattenFull(b,s,battLen){
+  // battLen: the length of the batten this edge is on (defaults to foot)
+  const len=battLen||foot;
+  const bt=getBatten(b,s);
+  return{...bt,depthFt:bt.depthIn/12,apexFt:bt.apexRatio*len,
+    luffBend:bt.luffBend||0,leechBend:bt.leechBend||0,battLen:len};
+}
+
+// ── Apex-line bend helpers ──
+// Each side of the camber triangle (luff→apex, apex→leech) can be bent
+// using a quadratic Bézier. bend=0 → straight; bend>0 → convex outward;
+// bend<0 → concave inward. The control point is perpendicular to the midpoint.
+// Returns N+1 points along the curve (inclusive of endpoints).
+function bentSidePoints(x0,y0,x1,y1,bend,N){
+  // Midpoint
+  const mx=(x0+x1)/2, my=(y0+y1)/2;
+  // Perpendicular (rotate segment 90°)
+  const dx=x1-x0, dy=y1-y0;
+  const len=Math.sqrt(dx*dx+dy*dy)||1;
+  // Control point displaced perpendicular to the segment
+  const cpx=mx + (-dy/len)*bend*(len/2);
+  const cpy=my + (dx/len)*bend*(len/2);
+  const pts=[];
+  for(let i=0;i<=N;i++){
+    const t=i/N;
+    const u=1-t;
+    pts.push([u*u*x0+2*u*t*cpx+t*t*x1, u*u*y0+2*u*t*cpy+t*t*y1]);
+  }
+  return pts;
+}
+// Like bentSidePoints but returns only the interior points (excludes endpoints)
+function bentSideInterior(x0,y0,x1,y1,bend,N){
+  const all=bentSidePoints(x0,y0,x1,y1,bend,N);
+  return all.slice(1,all.length-1);
+}
+
+// ═══════════════════════════════════════════════
+// World coords: y=0 = main sail head, positive y = downward.
+// Fan luff pin is at (0, panelH) — the top edge of the rect sail (first remaining batten).
+// Head batten: (0,panelH) → (foot,panelH) — horizontal, same as B1 of rect sail.
+// Fan battens rise UPWARD (negative y direction) from the luff pin.
+// battTip = [battLen*cos(angle), panelH - battLen*sin(angle)]
+// yardTip = [yardLen*cos(angle), panelH - yardLen*sin(angle)]
+// Panel 0 (batten panel): triangle pin → head-batten-tip → battTip
+// Panel 1 (yard panel):   triangle pin → battTip → yardTip
+function getTopPanelGeometry(){
+  if(!showTopPanels) return[];
+  const s=computeSail(foot,nPanels);
+  const panelH=s.panelH;
+  const D2R=Math.PI/180;
+
+  const battLen=topPanels[0].battLen, battAngle=topPanels[0].angleDeg;
+  const yardLen=topPanels[1].battLen, yardAngle=topPanels[1].angleDeg;
+
+  // Luff pin at (0,panelH); tips go upward (y decreases)
+  const pin=[0, panelH];
+  const headTip=[foot, panelH];  // horizontal head batten leech end
+  const battTip=[battLen*Math.cos(battAngle*D2R), panelH - battLen*Math.sin(battAngle*D2R)];
+  const yardTip=[yardLen*Math.cos(yardAngle*D2R), panelH - yardLen*Math.sin(yardAngle*D2R)];
+
+  const p0={
+    i:0, topLen:battLen, topAngle:battAngle, panelH, luffH:0,
+    verts:[pin, headTip, battTip],
+    pin, headTip, battTip, yardTip, label:'Batten'
+  };
+  const p1={
+    i:1, topLen:yardLen, topAngle:yardAngle, panelH, luffH:0,
+    verts:[pin, battTip, yardTip],
+    pin, headTip, battTip, yardTip, label:'Yard'
+  };
+  return[p0,p1];
+}
+
+function topSailArea(tps){
+  if(!tps||tps.length===0) return 0;
+  return tps.reduce((sum,tp)=>{
+    const v=tp.verts;
+    let a=0;
+    for(let j=0;j<v.length;j++){const va=v[j],vb=v[(j+1)%v.length];a+=va[0]*vb[1]-vb[0]*va[1];}
+    return sum+Math.abs(a)/2;
+  },0);
+}
+
+// ═══════════════════════════════════════════════
+// POLYGON OFFSET
+// ═══════════════════════════════════════════════
+function offsetPolygon(pts,d){
+  const n=pts.length;
+  const normals=[];
+  for(let i=0;i<n;i++){
+    const a=pts[i],b=pts[(i+1)%n];
+    const dx=b[0]-a[0],dy=b[1]-a[1];
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    normals.push([dy/len,-dx/len]);
+  }
+  const out=[];
+  for(let i=0;i<n;i++){
+    const prev=(i+n-1)%n;
+    const na=normals[prev],nb=normals[i];
+    const a=pts[prev],b=pts[i],c=pts[(i+1)%n];
+    const p1x=b[0]+na[0]*d,p1y=b[1]+na[1]*d;
+    const p2x=b[0]+nb[0]*d,p2y=b[1]+nb[1]*d;
+    const dx1=b[0]-a[0],dy1=b[1]-a[1];
+    const dx2=c[0]-b[0],dy2=c[1]-b[1];
+    const denom=dx1*dy2-dy1*dx2;
+    if(Math.abs(denom)<1e-10){out.push([p2x,p2y]);}
+    else{const t=((p2x-p1x)*dy2-(p2y-p1y)*dx2)/denom;out.push([p1x+t*dx1,p1y+t*dy1]);}
+  }
+  return out;
+}
+
+// Main panel stitch polygon (ft coords, y=0 at top batten of panel)
+function stitchPolygon(panelIdx,s){
+  const topB=getBattenFull(panelIdx,  s,foot);
+  const botB=getBattenFull(panelIdx+1,s,foot);
+  const SEGS=12; // curve resolution
+  const pts=[];
+  pts.push([0,0]);
+  if(topB.enabled){
+    const ax=topB.apexFt, ay=-topB.depthFt;
+    // luff → apex (luffBend perpendicular to segment pushes outward = upward on luff side)
+    const luffSide=bentSideInterior(0,0,ax,ay,topB.luffBend,SEGS);
+    luffSide.forEach(p=>pts.push(p));
+    pts.push([ax,ay]);
+    // apex → leech (leechBend perpendicular to segment)
+    const leechSide=bentSideInterior(ax,ay,foot,0,topB.leechBend,SEGS);
+    leechSide.forEach(p=>pts.push(p));
+  }
+  pts.push([foot,0]);
+  pts.push([foot,s.panelH]);
+  if(botB.enabled){
+    // Bottom edge: polygon traverses leech→apex→luff (reversed vs stored orientation).
+    // Reversing a segment flips the 90° perpendicular, so to keep "outward" (downward)
+    // meaning the same as the top edge, the signs must stay positive here.
+    const ax=botB.apexFt, ay=s.panelH+botB.depthFt;
+    const leechToApex=bentSideInterior(foot,s.panelH,ax,ay,botB.leechBend,SEGS);
+    leechToApex.forEach(p=>pts.push(p));
+    pts.push([ax,ay]);
+    const apexToLuff=bentSideInterior(ax,ay,0,s.panelH,botB.luffBend,SEGS);
+    apexToLuff.forEach(p=>pts.push(p));
+  }
+  pts.push([0,s.panelH]);
+  return pts;
+}
+
+function totalSailArea(s,tps){
+  const mainArea=s.panels.reduce((sum,p)=>sum+foot*(p.yBot-p.yTop),0);
+  return mainArea+topSailArea(tps);
+}
+
+// ═══════════════════════════════════════════════
+// ASSEMBLY DRAW
+// ═══════════════════════════════════════════════
+const asmCanvas=document.getElementById('asmCanvas');
+const ctx=asmCanvas.getContext('2d');
+const asmWrap=document.getElementById('asmWrap');
+
+function atx(x){return vpX+x*vpScale}
+function aty(y){return vpY+y*vpScale} // y=0 = main sail head; positive=downward
+function afp(f){return f*vpScale}
+
+function fitToView(){
+  const W=asmWrap.clientWidth,H=asmWrap.clientHeight;
+  if(!W||!H)return;
+  const s=computeSail(foot,nPanels);
+  const tps=getTopPanelGeometry();
+  let minY=0;
+  tps.forEach(tp=>{ tp.verts.forEach(v=>{ minY=Math.min(minY,v[1]); }); });
+  const topExtra=Math.max(0,-minY);
+  const totalH=s.height+topExtra;
+  const maxW=foot;
+  const m=Math.min(60,Math.min(W,H)*0.08); // adaptive margin — never starves a narrow canvas
+  vpScale=Math.max(4,Math.min((W-m*2)/(maxW*1.2),(H-m*2)/(totalH*1.05)));
+  vpX=(W-maxW*vpScale)/2;
+  vpY=(H-totalH*vpScale)/2 + topExtra*vpScale;
+}
+
+function drawAssembly(){
+  const W=asmWrap.clientWidth,H=asmWrap.clientHeight;
+  if(!W||!H)return;
+  asmCanvas.width=W; asmCanvas.height=H;
+  const s=computeSail(foot,nPanels);
+  const tps=getTopPanelGeometry();
+  const{height,panelH,panels}=s;
+
+  // ── Main panels ──
+  const FILL={flat:'rgba(90,136,160,.07)',single:'rgba(232,228,216,.09)',double:'rgba(200,169,110,.20)'};
+  const STROKE={flat:'#527888',single:'#aaa490',double:'#c8a96e'};
+  const DASH={flat:[4,3],single:[],double:[]};
+  const LW={flat:1,single:1,double:1.5};
+
+  panels.forEach(p=>{
+    const isSel=selectedPanel&&selectedPanel.type==='main'&&selectedPanel.idx===p.i;
+    ctx.beginPath();
+    ctx.moveTo(atx(0),aty(p.yTop)); ctx.lineTo(atx(foot),aty(p.yTop));
+    ctx.lineTo(atx(foot),aty(p.yBot)); ctx.lineTo(atx(0),aty(p.yBot));
+    ctx.closePath();
+    ctx.fillStyle=isSel?'rgba(74,144,176,.18)':FILL[p.defType]; ctx.fill();
+    ctx.strokeStyle=isSel?'#4a90b0':STROKE[p.defType];
+    ctx.lineWidth=isSel?2:LW[p.defType];
+    ctx.setLineDash(isSel?[]:DASH[p.defType]); ctx.stroke(); ctx.setLineDash([]);
+  });
+
+  // ── Luff (main) — when fan on, start at panelH (fan covers y=0..panelH at luff/leech) ──
+  const rectTop=showTopPanels?panelH:0;
+  ctx.beginPath(); ctx.moveTo(atx(0),aty(rectTop)); ctx.lineTo(atx(0),aty(height));
+  ctx.strokeStyle='#d4ceb8'; ctx.lineWidth=2.5; ctx.stroke();
+  // ── Leech (main) ──
+  ctx.beginPath(); ctx.moveTo(atx(foot),aty(rectTop)); ctx.lineTo(atx(foot),aty(height));
+  ctx.strokeStyle='#d4ceb8'; ctx.lineWidth=2.5; ctx.stroke();
+  // ── Foot batten (boom) ──
+  ctx.beginPath(); ctx.moveTo(atx(0),aty(height)); ctx.lineTo(atx(foot),aty(height));
+  ctx.strokeStyle='#d4ceb8'; ctx.lineWidth=2.5; ctx.stroke();
+
+  // ── Main battens ──
+  const lfs=Math.max(8,vpScale*.17);
+  for(let i=0;i<=nPanels;i++){
+    // When fan is on: skip i=0 (head batten drawn by fan) and i=1 (would form ghost P1 top edge)
+    if(showTopPanels && (i===0||i===1)) continue;
+    const y=i*panelH;
+    const isSel2=selectedPanel&&selectedPanel.type==='main'&&(i===selectedPanel.idx||i===selectedPanel.idx+1);
+    ctx.beginPath(); ctx.moveTo(atx(0),aty(y)); ctx.lineTo(atx(foot),aty(y));
+    ctx.strokeStyle=isSel2?'rgba(74,144,176,.8)':'#b8a060';
+    ctx.lineWidth=(i===0||i===nPanels)?2.5:isSel2?2:1.5; ctx.stroke();
+    if(showLabels){
+      ctx.font=`${lfs}px "Share Tech Mono"`;
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      if(i===nPanels){
+        // Boom
+        ctx.fillStyle='#c8a96e';
+        ctx.fillText('Boom',atx(0)-5,aty(y));
+      } else if(i===0&&!showTopPanels){
+        // No fan: head batten is the yard
+        ctx.fillStyle='#7090c8';
+        ctx.fillText('Yard',atx(0)-5,aty(y));
+      } else if(i>0&&i<nPanels){
+        ctx.fillStyle='#8a7848';
+        ctx.fillText(`B${i+1}`,atx(0)-5,aty(y));
+      }
+    }
+  }
+
+  // ── Camber indicators (main) ──
+  if(showCamber){
+    for(let b=s.firstPanel+1;b<nPanels;b++){
+      const bt=getBattenFull(b,s,foot);
+      if(!bt.enabled) continue;
+      const yFt=b*panelH;
+      const above=s.panels.find(p=>p.i===b-1), below=s.panels.find(p=>p.i===b);
+      const bold=bt.isOverride||((above&&above.defType==='double')||(below&&below.defType==='double'));
+      drawCamberInd(yFt,bt.apexFt,bt.depthFt,bold,bt.luffBend,bt.leechBend);
+    }
+  }
+
+  // ── Panel labels (main) ──
+  if(showLabels){
+    const tl={flat:'FLAT',single:'1-SIDE',double:'2-SIDE'};
+    const tc={flat:'#486070',single:'#907c60',double:'#c8a96e'};
+    const pfs=Math.max(7,vpScale*.13);
+    panels.forEach(p=>{
+      const isSel=selectedPanel&&selectedPanel.type==='main'&&selectedPanel.idx===p.i;
+      ctx.fillStyle=isSel?'#4a90b0':tc[p.defType];
+      ctx.font=`${pfs}px "Share Tech Mono"`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      const displayNum = showTopPanels ? p.i : p.i+1;
+      ctx.fillText(`P${displayNum} ${tl[p.defType]}`,atx(foot/2),aty((p.yTop+p.yBot)/2));
+    });
+  }
+
+  // ── Fan head — two triangular panels, base at y=panelH, rising upward ──
+  if(tps.length===2){
+    const t0=tps[0], t1=tps[1];
+    const isSel0=selectedPanel&&selectedPanel.type==='top'&&selectedPanel.idx===0;
+    const isSel1=selectedPanel&&selectedPanel.type==='top'&&selectedPanel.idx===1;
+    const{pin,headTip,battTip,yardTip}=t0;
+
+    // Panel 0: pin → headTip → battTip
+    ctx.beginPath();
+    ctx.moveTo(atx(pin[0]),aty(pin[1]));
+    ctx.lineTo(atx(headTip[0]),aty(headTip[1]));
+    ctx.lineTo(atx(battTip[0]),aty(battTip[1]));
+    ctx.closePath();
+    ctx.fillStyle=isSel0?'rgba(70,100,200,.32)':'rgba(70,100,200,.16)'; ctx.fill();
+    ctx.strokeStyle=isSel0?'#8090d0':'#6080b8'; ctx.lineWidth=isSel0?2:1.2; ctx.stroke();
+
+    // Panel 1: pin → battTip → yardTip
+    ctx.beginPath();
+    ctx.moveTo(atx(pin[0]),aty(pin[1]));
+    ctx.lineTo(atx(battTip[0]),aty(battTip[1]));
+    ctx.lineTo(atx(yardTip[0]),aty(yardTip[1]));
+    ctx.closePath();
+    ctx.fillStyle=isSel1?'rgba(70,120,220,.32)':'rgba(90,120,220,.13)'; ctx.fill();
+    ctx.strokeStyle=isSel1?'#8090d0':'#7090c8'; ctx.lineWidth=isSel1?2:1.2; ctx.stroke();
+
+    // Head batten (base of fan, = top of rect sail)
+    ctx.beginPath(); ctx.moveTo(atx(pin[0]),aty(pin[1])); ctx.lineTo(atx(headTip[0]),aty(headTip[1]));
+    ctx.strokeStyle='#b8a060'; ctx.lineWidth=2.5; ctx.stroke();
+    // Angled batten
+    ctx.beginPath(); ctx.moveTo(atx(pin[0]),aty(pin[1])); ctx.lineTo(atx(battTip[0]),aty(battTip[1]));
+    ctx.strokeStyle=(isSel0||isSel1)?'rgba(160,180,240,.9)':'rgba(130,155,215,.8)'; ctx.lineWidth=1.8; ctx.stroke();
+    // Yard
+    ctx.beginPath(); ctx.moveTo(atx(pin[0]),aty(pin[1])); ctx.lineTo(atx(yardTip[0]),aty(yardTip[1]));
+    ctx.strokeStyle=isSel1?'#9090e0':'#7090c8'; ctx.lineWidth=2.2; ctx.stroke();
+
+    if(showLabels){
+      const pfs=Math.max(7,vpScale*.11);
+      ctx.font=`${pfs}px "Share Tech Mono"`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      const c0x=(pin[0]+headTip[0]+battTip[0])/3, c0y=(pin[1]+headTip[1]+battTip[1])/3;
+      ctx.fillStyle=isSel0?'#8090d0':'#5870a0';
+      ctx.fillText('F1',atx(c0x),aty(c0y));
+      const c1x=(pin[0]+battTip[0]+yardTip[0])/3, c1y=(pin[1]+battTip[1]+yardTip[1])/3;
+      ctx.fillStyle=isSel1?'#8090d0':'#6878b8';
+      ctx.fillText('F2',atx(c1x),aty(c1y));
+      ctx.fillStyle='#7090c8'; ctx.font=`${Math.max(8,vpScale*.17)}px "Share Tech Mono"`;
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText('Yard',atx(0)-5,aty(pin[1]));
+    }
+    if(showDims){
+      const fs2=Math.max(7,vpScale*.10);
+      ctx.fillStyle='rgba(112,144,200,.85)'; ctx.font=`${fs2}px "Share Tech Mono"`;
+      const amx=(pin[0]+battTip[0])/2, amy=(pin[1]+battTip[1])/2;
+      const aAng=Math.atan2(battTip[1]-pin[1],battTip[0]-pin[0]);
+      ctx.save(); ctx.translate(atx(amx),aty(amy)); ctx.rotate(aAng);
+      ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText(`${t0.topLen.toFixed(2)} ft @ ${t0.topAngle.toFixed(0)}°`,0,-3);
+      ctx.restore();
+      const ymx=(pin[0]+yardTip[0])/2, ymy=(pin[1]+yardTip[1])/2;
+      const yAng=Math.atan2(yardTip[1]-pin[1],yardTip[0]-pin[0]);
+      ctx.save(); ctx.translate(atx(ymx),aty(ymy)); ctx.rotate(yAng);
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(`Yard ${t1.topLen.toFixed(2)} ft @ ${t1.topAngle.toFixed(0)}°`,0,3);
+      ctx.restore();
+    }
+  }
+
+  // ── Sail area watermark ──
+  const area=totalSailArea(s,tps);
+  const totalH=s.height;
+  ctx.fillStyle='rgba(200,169,110,.13)';
+  ctx.font=`${Math.max(11,vpScale*.22)}px "Cormorant Garamond",serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(`${area.toFixed(1)} ft²`,atx(foot/2),aty(height/2));
+
+  if(showDims) drawAsmDims(s,tps);
+}
+
+function drawCamberInd(yFt,apexFt,depthFt,bold,luffBend,leechBend){
+  luffBend=luffBend||0; leechBend=leechBend||0;
+  const lx=atx(0),rx=atx(foot),by=aty(yFt);
+  const px=atx(apexFt),py=aty(yFt)-afp(depthFt);
+  ctx.strokeStyle=bold?'rgba(200,169,110,.8)':'rgba(200,169,110,.4)';
+  ctx.fillStyle=bold?'rgba(200,169,110,.08)':'rgba(200,169,110,.03)';
+  ctx.lineWidth=bold?1.5:1;
+  ctx.beginPath();
+  ctx.moveTo(lx,by);
+  // luff→apex with luffBend
+  {const mx=(lx+px)/2,my=(by+py)/2;
+   const dx=px-lx,dy=py-by,len=Math.sqrt(dx*dx+dy*dy)||1;
+   const cpx=mx+(-dy/len)*luffBend*(len/2);
+   const cpy=my+(dx/len)*luffBend*(len/2);
+   ctx.quadraticCurveTo(cpx,cpy,px,py);}
+  // apex→leech with leechBend
+  {const mx=(px+rx)/2,my=(py+by)/2;
+   const dx=rx-px,dy=by-py,len=Math.sqrt(dx*dx+dy*dy)||1;
+   const cpx=mx+(-dy/len)*leechBend*(len/2);
+   const cpy=my+(dx/len)*leechBend*(len/2);
+   ctx.quadraticCurveTo(cpx,cpy,rx,by);}
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(px,py,bold?3.5:2.5,0,Math.PI*2);
+  ctx.fillStyle=bold?'#c8a96e':'rgba(200,169,110,.55)'; ctx.fill();
+}
+
+function drawAsmDims(s,tps){
+  const{height,panelH,keyIdx}=s;
+  const fs=Math.max(8,vpScale*.14),col='#6090a8',tick=5;
+  ctx.font=`${fs}px "Share Tech Mono"`; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=1;
+
+  // Foot dimension (below sail)
+  const botY=aty(height)+28;
+  ctx.beginPath();
+  ctx.moveTo(atx(0),botY-tick); ctx.lineTo(atx(0),botY+tick);
+  ctx.moveTo(atx(foot),botY-tick); ctx.lineTo(atx(foot),botY+tick);
+  ctx.moveTo(atx(0),botY); ctx.lineTo(atx(foot),botY); ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText(`${foot.toFixed(1)} ft`,atx(foot/2),botY+tick+1);
+
+  // Height (right of sail)
+  const rX=atx(foot)+36;
+  ctx.beginPath();
+  ctx.moveTo(rX-tick,aty(0)); ctx.lineTo(rX+tick,aty(0));
+  ctx.moveTo(rX-tick,aty(height)); ctx.lineTo(rX+tick,aty(height));
+  ctx.moveTo(rX,aty(0)); ctx.lineTo(rX,aty(height)); ctx.stroke();
+  ctx.save(); ctx.translate(rX+fs+2,aty(height/2)); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(`${height.toFixed(1)} ft`,0,0); ctx.restore();
+
+  // Panel height (left of sail, first panel)
+  const lX=atx(0)-36;
+  ctx.beginPath();
+  ctx.moveTo(lX-tick,aty(0)); ctx.lineTo(lX+tick,aty(0));
+  ctx.moveTo(lX-tick,aty(panelH)); ctx.lineTo(lX+tick,aty(panelH));
+  ctx.moveTo(lX,aty(0)); ctx.lineTo(lX,aty(panelH)); ctx.stroke();
+  ctx.save(); ctx.translate(lX-fs-2,aty(panelH/2)); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(`${panelH.toFixed(2)} ft`,0,0); ctx.restore();
+
+  // Fan head dims are drawn inline in drawAssembly with showDims check
+}
+
+// ═══════════════════════════════════════════════
+// TOP PANEL CONFIG UI
+// ═══════════════════════════════════════════════
+// Re-sync topPanels defaults when foot/nPanels change, preserving user overrides
+function syncTopPanelDefaults(){
+  const def=defaultTopPanels();
+  for(let i=0;i<2;i++){
+    const ov=topPanelOverrides[i];
+    topPanels[i]={
+      battLen: ov&&ov.battLen!=null ? ov.battLen : def[i].battLen,
+      angleDeg: ov&&ov.angleDeg!=null ? ov.angleDeg : def[i].angleDeg,
+      luffH: 0
+    };
+  }
+}
+
+function buildTopPanelConfigs(){
+  const container=document.getElementById('topPanelConfigs');
+  container.innerHTML='';
+  if(!showTopPanels) return;
+  syncTopPanelDefaults();
+  const tps=getTopPanelGeometry();
+
+  const block=document.createElement('div');
+  block.className='tp-block';
+  const batt=topPanels[0], yard=topPanels[1];
+  block.innerHTML=`
+    <div class="tp-block-title">Fan Head <span style="font-size:.55rem;color:var(--ink-dim)">battens fan from mast head</span></div>
+    <div class="ctrl"><label class="clabel">Angled batten length (ft)</label>
+      <div class="ctrl-row">
+        <input type="range" class="blue-thumb" id="tpL0" min="0.25" max="${(foot*1.5).toFixed(2)}" step="0.25" value="${batt.battLen.toFixed(2)}">
+        <input type="number" id="tpLn0" min="0.25" max="${(foot*1.5).toFixed(2)}" step="0.25" value="${batt.battLen.toFixed(2)}">
+      </div>
+    </div>
+    <div class="ctrl"><label class="clabel">Angled batten angle (°)</label>
+      <div class="ctrl-row">
+        <input type="range" class="blue-thumb" id="tpA0" min="0" max="89" step="1" value="${batt.angleDeg}">
+        <input type="number" id="tpAn0" min="0" max="89" step="1" value="${batt.angleDeg}">
+      </div>
+    </div>
+    <div class="ctrl" style="margin-top:5px"><label class="clabel">Yard length (ft)</label>
+      <div class="ctrl-row">
+        <input type="range" class="blue-thumb" id="tpL1" min="0.25" max="${(foot*1.5).toFixed(2)}" step="0.25" value="${yard.battLen.toFixed(2)}">
+        <input type="number" id="tpLn1" min="0.25" max="${(foot*1.5).toFixed(2)}" step="0.25" value="${yard.battLen.toFixed(2)}">
+      </div>
+    </div>
+    <div class="ctrl"><label class="clabel">Yard angle (°)</label>
+      <div class="ctrl-row">
+        <input type="range" class="blue-thumb" id="tpA1" min="0" max="89" step="1" value="${yard.angleDeg}">
+        <input type="number" id="tpAn1" min="0" max="89" step="1" value="${yard.angleDeg}">
+      </div>
+    </div>
+    <button id="tpResetAll" style="width:100%;padding:3px 0;font-family:'Share Tech Mono',monospace;font-size:.55rem;background:var(--panel);border:1px solid var(--border);color:var(--ink-dim);cursor:pointer;margin-top:4px">Reset to defaults</button>`;
+  container.appendChild(block);
+
+  function wirePair(slId,nmId,panelIdx,field){
+    const sl=block.querySelector('#'+slId), nm=block.querySelector('#'+nmId);
+    const update=v=>{
+      topPanels[panelIdx][field]=v;
+      topPanelOverrides[panelIdx]=topPanelOverrides[panelIdx]||{};
+      topPanelOverrides[panelIdx][field]=v;
+      refresh();
+    };
+    sl.addEventListener('input',()=>{nm.value=sl.value; update(parseFloat(sl.value));});
+    nm.addEventListener('change',()=>{sl.value=nm.value; update(parseFloat(nm.value));});
+  }
+  wirePair('tpL0','tpLn0',0,'battLen');
+  wirePair('tpA0','tpAn0',0,'angleDeg');
+  wirePair('tpL1','tpLn1',1,'battLen');
+  wirePair('tpA1','tpAn1',1,'angleDeg');
+  block.querySelector('#tpResetAll').addEventListener('click',()=>{
+    topPanelOverrides=[null,null];
+    syncTopPanelDefaults();
+    buildTopPanelConfigs(); refresh();
+  });
+}
+
+document.getElementById('chkTopPanels').addEventListener('change',e=>{
+  showTopPanels=e.target.checked;
+  if(showTopPanels){ syncTopPanelDefaults(); }
+  battens={}; deselect();
+  fitToView(); buildTopPanelConfigs(); refresh();
+});
+
+// ═══════════════════════════════════════════════
+// SIDEBAR PANEL BUTTONS
+// ═══════════════════════════════════════════════
+function buildPanelButtons(){
+  const grid=document.getElementById('panelBtnGrid');
+  grid.innerHTML='';
+  const s=computeSail(foot,nPanels);
+  const tps=getTopPanelGeometry();
+
+  // Fan head buttons — F1 (batten) and F2 (yard) as separate entries
+  if(showTopPanels){
+    const tps2=getTopPanelGeometry();
+    const fanLabels=['F1 Batten','F2 Yard'];
+    tps2.forEach(tp=>{
+      const isSel=selectedPanel&&selectedPanel.type==='top'&&selectedPanel.idx===tp.i;
+      const btn=document.createElement('button');
+      btn.className='panel-btn top-panel'+(isSel?' active':'');
+      btn.innerHTML=`<span style="color:var(--top-accent)">${fanLabels[tp.i]}</span>
+        <span style="font-size:.57rem;color:var(--ink-dim)">${tp.topLen.toFixed(2)} ft @ ${tp.topAngle.toFixed(0)}°</span>`;
+      btn.addEventListener('click',()=>{
+        if(isSel) deselect();
+        else{ selectedPanel={type:'top',idx:tp.i}; document.getElementById('inspector').classList.remove('vis'); buildPanelButtons(); drawAssembly(); }
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  // Main panel buttons
+  s.panels.forEach(p=>{
+    const topB=getBattenFull(p.i,  s,foot);
+    const botB=getBattenFull(p.i+1,s,foot);
+    const isSel=selectedPanel&&selectedPanel.type==='main'&&selectedPanel.idx===p.i;
+    const tl={flat:'FLAT',single:'1-SIDE',double:'2-SIDE'};
+    const btn=document.createElement('button');
+    btn.className='panel-btn'+(isSel?' active':'');
+    const tShape=topB.enabled?'shaped':'flat';
+    const bShape=botB.enabled?'shaped':'flat';
+    btn.innerHTML=`<span>P${p.i+1} <span style="color:var(--ink-dim);font-size:.57rem">${tl[p.defType]}</span></span>
+      <span class="pbadges">
+        <span class="pbadge ${tShape}" title="Top edge">T</span>
+        <span class="pbadge ${bShape}" title="Bot edge">B</span>
+      </span>`;
+    btn.addEventListener('click',()=>{
+      if(isSel) deselect();
+      else selectMainPanel(p.i,s);
+    });
+    grid.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INSPECTOR — MAIN PANELS
+// ═══════════════════════════════════════════════
+function selectMainPanel(idx,s){
+  selectedPanel={type:'main',idx};
+  s=s||computeSail(foot,nPanels);
+  const topB=getBattenFull(idx,  s,foot);
+  const botB=getBattenFull(idx+1,s,foot);
+  const insp=document.getElementById('inspector');
+  insp.classList.add('vis');
+  const hdr=document.getElementById('inspHdr');
+  hdr.textContent=`Panel P${idx+1} · battens B${idx+1}/B${idx+2}`;
+  hdr.className='insp-hdr';
+  populateEdge('top',topB,foot);
+  populateEdge('bot',botB,foot);
+  buildPanelButtons(); drawAssembly();
+}
+
+function deselect(){
+  selectedPanel=null;
+  document.getElementById('inspector').classList.remove('vis');
+  buildPanelButtons(); drawAssembly();
+}
+
+function populateEdge(which,bt,battLen){
+  const en=document.getElementById(`${which}Enabled`);
+  const dS=document.getElementById(`${which}DepSld`),dN=document.getElementById(`${which}DepNum`);
+  const aS=document.getElementById(`${which}ApxSld`),aN=document.getElementById(`${which}ApxNum`);
+  const lbS=document.getElementById(`${which}LuffBendSld`),lbN=document.getElementById(`${which}LuffBendNum`);
+  const lebS=document.getElementById(`${which}LeechBendSld`),lebN=document.getElementById(`${which}LeechBendNum`);
+  const ctrls=document.getElementById(`${which}Ctrls`);
+  const badge=document.getElementById(`${which}Badge`);
+  const lbl=document.getElementById(`${which}ApxLbl`);
+  en.checked=bt.enabled;
+  dS.value=bt.depthIn; dN.value=bt.depthIn;
+  aS.value=bt.apexRatio.toFixed(3); aN.value=bt.apexRatio.toFixed(3);
+  const lb=(bt.luffBend||0).toFixed(2), leb=(bt.leechBend||0).toFixed(2);
+  lbS.value=lb; lbN.value=lb;
+  lebS.value=leb; lebN.value=leb;
+  ctrls.style.display=bt.enabled?'flex':'none';
+  badge.textContent=bt.enabled?'SHAPED':'FLAT';
+  badge.className='ebadge '+(bt.enabled?'shaped':'flat');
+  lbl.textContent=`${(bt.apexRatio*battLen).toFixed(2)} ft from luff`;
+}
+
+function battenIdxFor(which){
+  if(!selectedPanel||selectedPanel.type!=='main') return null;
+  return which==='top'?selectedPanel.idx:selectedPanel.idx+1;
+}
+
+function writeEdge(which){
+  const b=battenIdxFor(which);
+  const s=computeSail(foot,nPanels);
+  if(b===null||b<=s.firstPanel||b>=nPanels) return;
+  const enabled=document.getElementById(`${which}Enabled`).checked;
+  const depthIn=parseFloat(document.getElementById(`${which}DepNum`).value);
+  const apexRatio=parseFloat(document.getElementById(`${which}ApxNum`).value);
+  const luffBend=parseFloat(document.getElementById(`${which}LuffBendNum`).value)||0;
+  const leechBend=parseFloat(document.getElementById(`${which}LeechBendNum`).value)||0;
+  battens[b]={enabled,depthIn,apexRatio,luffBend,leechBend};
+  const badge=document.getElementById(`${which}Badge`);
+  badge.textContent=enabled?'SHAPED':'FLAT';
+  badge.className='ebadge '+(enabled?'shaped':'flat');
+  document.getElementById(`${which}Ctrls`).style.display=enabled?'flex':'none';
+  document.getElementById(`${which}ApxLbl`).textContent=`${(apexRatio*foot).toFixed(2)} ft from luff`;
+  buildPanelButtons(); refresh();
+}
+
+['top','bot'].forEach(w=>{
+  document.getElementById(`${w}Enabled`).addEventListener('change',()=>writeEdge(w));
+  const dS=document.getElementById(`${w}DepSld`),dN=document.getElementById(`${w}DepNum`);
+  dS.addEventListener('input',()=>{dN.value=dS.value;writeEdge(w);});
+  dN.addEventListener('change',()=>{dS.value=dN.value;writeEdge(w);});
+  const aS=document.getElementById(`${w}ApxSld`),aN=document.getElementById(`${w}ApxNum`);
+  aS.addEventListener('input',()=>{aN.value=parseFloat(aS.value).toFixed(3);writeEdge(w);});
+  aN.addEventListener('change',()=>{aS.value=aN.value;writeEdge(w);});
+  const lbS=document.getElementById(`${w}LuffBendSld`),lbN=document.getElementById(`${w}LuffBendNum`);
+  lbS.addEventListener('input',()=>{lbN.value=parseFloat(lbS.value).toFixed(2);writeEdge(w);});
+  lbN.addEventListener('change',()=>{lbS.value=lbN.value;writeEdge(w);});
+  const lebS=document.getElementById(`${w}LeechBendSld`),lebN=document.getElementById(`${w}LeechBendNum`);
+  lebS.addEventListener('input',()=>{lebN.value=parseFloat(lebS.value).toFixed(2);writeEdge(w);});
+  lebN.addEventListener('change',()=>{lebS.value=lebN.value;writeEdge(w);});
+});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!selectedPanel||selectedPanel.type!=='main') return;
+  delete battens[selectedPanel.idx]; delete battens[selectedPanel.idx+1];
+  const s=computeSail(foot,nPanels);
+  selectMainPanel(selectedPanel.idx,s); refresh();
+});
+
+// ═══════════════════════════════════════════════
+// PANEL VIEW
+// ═══════════════════════════════════════════════
+function buildPanelView(){
+  const grid=document.getElementById('panelGrid');
+  grid.innerHTML='';
+  const s=computeSail(foot,nPanels);
+  const tps=getTopPanelGeometry();
+  const seamFt=seamIn/12;
+
+  // Fan head — two independent triangular panel cards
+  if(tps.length===2){
+    tps.forEach(tp=>{
+      const seamFt=seamIn/12;
+      // Flatten to pattern coords: flip y (negative world y → positive pattern y)
+      const pin=tp.pin;
+      const verts=tp.verts.map(v=>[v[0]-pin[0],-(v[1]-pin[1])]);
+      const cut=offsetPolygon(verts,seamFt);
+      const allX=[...verts,...cut].map(q=>q[0]);
+      const allY=[...verts,...cut].map(q=>q[1]);
+      const minX=Math.min(...allX),maxX=Math.max(...allX);
+      const minY=Math.min(...allY),maxY=Math.max(...allY);
+      const pad=seamFt*0.8;
+      const bboxW=maxX-minX+pad*2,bboxH=maxY-minY+pad*2;
+      const sc=Math.min(210/bboxW,210/bboxH);
+      const cW=Math.round(bboxW*sc),cH=Math.round(bboxH*sc);
+      const ox=-minX+pad,oy=-minY+pad;
+      const px2=xFt=>(xFt+ox)*sc;
+      const py2=yFt=>cH-((yFt+oy)*sc);  // flip y: positive=up on canvas
+      function pathPoly(pts,c2){
+        c2.beginPath(); c2.moveTo(px2(pts[0][0]),py2(pts[0][1]));
+        for(let j=1;j<pts.length;j++) c2.lineTo(px2(pts[j][0]),py2(pts[j][1]));
+        c2.closePath();
+      }
+      const isYard=(tp.i===1);
+      const card=document.createElement('div');
+      card.className='panel-card top-card';
+      card.style.width=(cW+2)+'px';
+      card.innerHTML=`
+        <div class="panel-card-header">
+          <span class="panel-card-title blue">${isYard?'Yard Panel (F2)':'Batten Panel (F1)'}</span>
+          <span class="panel-card-type" style="color:var(--top-accent);font-size:.57rem">${tp.topLen.toFixed(2)} ft @ ${tp.topAngle.toFixed(0)}°</span>
+        </div>
+        <canvas width="${cW}" height="${cH}" style="display:block"></canvas>
+        <div class="panel-card-footer">
+          <button class="exp-btn" onclick="exportTopPanel(${tp.i},'svg')">SVG</button>
+          <button class="exp-btn" onclick="exportTopPanel(${tp.i},'dxf')">DXF</button>
+          <button class="exp-btn" onclick="exportTopPanel(${tp.i},'gcode')">G-code</button>
+        </div>`;
+      grid.appendChild(card);
+      const c2=card.querySelector('canvas').getContext('2d');
+      c2.fillStyle='#1a1a18'; c2.fillRect(0,0,cW,cH);
+      pathPoly(cut,c2); c2.fillStyle='rgba(30,45,70,.6)'; c2.fill();
+      pathPoly(verts,c2); c2.fillStyle='rgba(70,100,200,.18)'; c2.fill();
+      pathPoly(cut,c2); c2.strokeStyle='#4a6890'; c2.lineWidth=1;
+      c2.setLineDash([sc*.08,sc*.05]); c2.stroke(); c2.setLineDash([]);
+      pathPoly(verts,c2); c2.strokeStyle='#7090c8'; c2.lineWidth=1.5; c2.stroke();
+      const fs=Math.max(7,sc*.08);
+      c2.fillStyle='#6090a8'; c2.font=`${fs}px "Share Tech Mono"`;
+      // Label along the key batten edge (verts[1]→verts[2])
+      const bx=(verts[1][0]+verts[2][0])/2, by=(verts[1][1]+verts[2][1])/2;
+      const ang=Math.atan2(-(verts[2][1]-verts[1][1]),verts[2][0]-verts[1][0]); // y-flipped angle
+      c2.save(); c2.translate(px2(bx),py2(by)); c2.rotate(ang);
+      c2.textAlign='center'; c2.textBaseline='bottom';
+      c2.fillText(`${tp.topLen.toFixed(2)} ft @ ${tp.topAngle.toFixed(0)}°`,0,-2); c2.restore();
+      c2.fillStyle='#803028'; c2.textAlign='center'; c2.textBaseline='middle';
+      c2.save(); c2.translate(px2(0)-2,py2(0)); c2.rotate(-Math.PI/2);
+      c2.fillText('MAST',0,0); c2.restore();
+      c2.fillStyle='#3a5868'; c2.textAlign='left'; c2.textBaseline='bottom';
+      c2.fillText(`SA ${seamIn}"`,2,cH-1);
+    });
+  }
+
+  // Main panels
+  s.panels.forEach(p=>{
+    const topB=getBattenFull(p.i,  s,foot);
+    const botB=getBattenFull(p.i+1,s,foot);
+    const stitch=stitchPolygon(p.i,s);
+    const cut=offsetPolygon(stitch,seamFt);
+
+    const allX=cut.map(q=>q[0]),allY=cut.map(q=>q[1]);
+    const minX=Math.min(...allX),maxX=Math.max(...allX);
+    const minY=Math.min(...allY),maxY=Math.max(...allY);
+    const pad=seamFt*0.5;
+    const bboxW=maxX-minX+pad*2,bboxH=maxY-minY+pad*2;
+    const sc=Math.min(210/bboxW,280/bboxH);
+    const cW=Math.round(bboxW*sc),cH=Math.round(bboxH*sc);
+    const ox=-minX+pad,oy=-minY+pad;
+    const px2=xFt=>(xFt+ox)*sc;
+    const py2=yFt=>(yFt+oy)*sc;
+
+    function pathPoly(pts,c2){
+      c2.beginPath(); c2.moveTo(px2(pts[0][0]),py2(pts[0][1]));
+      for(let j=1;j<pts.length;j++) c2.lineTo(px2(pts[j][0]),py2(pts[j][1]));
+      c2.closePath();
+    }
+
+    const typeLabel={flat:'FLAT',single:'1-SIDE',double:'2-SIDE'}[p.defType];
+    const typeColor={flat:'#4a7080',single:'#907c60',double:'#c8a96e'}[p.defType];
+
+    const card=document.createElement('div');
+    card.className='panel-card';
+    card.style.width=(cW+2)+'px';
+    card.innerHTML=`
+      <div class="panel-card-header">
+        <span class="panel-card-title">Panel P${p.i+1}</span>
+        <span class="panel-card-type" style="color:${typeColor}">${typeLabel}</span>
+      </div>
+      <canvas width="${cW}" height="${cH}" style="display:block"></canvas>
+      <div class="panel-card-footer">
+        <button class="exp-btn" onclick="exportPanel(${p.i},'svg')">SVG</button>
+        <button class="exp-btn" onclick="exportPanel(${p.i},'dxf')">DXF</button>
+        <button class="exp-btn" onclick="exportPanel(${p.i},'gcode')">G-code</button>
+      </div>`;
+    grid.appendChild(card);
+
+    const c2=card.querySelector('canvas').getContext('2d');
+    c2.fillStyle='#1a1a18'; c2.fillRect(0,0,cW,cH);
+    pathPoly(cut,c2); c2.fillStyle='rgba(30,55,65,.6)'; c2.fill();
+    const fillColor={flat:'rgba(90,136,160,.13)',single:'rgba(232,228,216,.13)',double:'rgba(200,169,110,.22)'}[p.defType];
+    pathPoly(stitch,c2); c2.fillStyle=fillColor; c2.fill();
+    pathPoly(cut,c2); c2.strokeStyle='#4a8898'; c2.lineWidth=1;
+    c2.setLineDash([sc*.08,sc*.05]); c2.stroke(); c2.setLineDash([]);
+    const strokeColor={flat:'#527888',single:'#aaa490',double:'#c8a96e'}[p.defType];
+    pathPoly(stitch,c2); c2.strokeStyle=strokeColor; c2.lineWidth=1.5; c2.stroke();
+    c2.beginPath(); c2.moveTo(px2(0),py2(0)); c2.lineTo(px2(0),py2(s.panelH));
+    c2.strokeStyle='#a05040'; c2.lineWidth=2.5; c2.stroke();
+
+    [[0,topB],[s.panelH,botB]].forEach(([yFt,bt])=>{
+      c2.beginPath(); c2.moveTo(px2(0),py2(yFt)); c2.lineTo(px2(foot),py2(yFt));
+      c2.strokeStyle='rgba(184,160,96,.5)'; c2.lineWidth=1;
+      if(bt.enabled) c2.setLineDash([sc*.06,sc*.04]);
+      c2.stroke(); c2.setLineDash([]);
+    });
+
+    const fs=Math.max(7,sc*.09);
+    c2.font=`${fs}px "Share Tech Mono"`;
+    if(topB.enabled){
+      const ax=px2(topB.apexFt),ay=py2(-topB.depthFt),by0=py2(0);
+      c2.beginPath(); c2.moveTo(ax,by0); c2.lineTo(ax,ay);
+      c2.strokeStyle='rgba(200,169,110,.7)'; c2.lineWidth=1; c2.setLineDash([3,2]); c2.stroke(); c2.setLineDash([]);
+      c2.beginPath(); c2.arc(ax,ay,3,0,Math.PI*2); c2.fillStyle='#c8a96e'; c2.fill();
+      c2.fillStyle='#c8a96e'; c2.textAlign='left'; c2.textBaseline='middle';
+      c2.fillText(`${topB.depthIn.toFixed(2)}"`,ax+4,(by0+ay)/2);
+      c2.fillStyle='#6090a8'; c2.textAlign='center'; c2.textBaseline='bottom';
+      c2.fillText(`${topB.apexFt.toFixed(2)} ft`,ax,by0-2);
+    }
+    if(botB.enabled){
+      const ax=px2(botB.apexFt),ay=py2(s.panelH+botB.depthFt),by0=py2(s.panelH);
+      c2.beginPath(); c2.moveTo(ax,by0); c2.lineTo(ax,ay);
+      c2.strokeStyle='rgba(200,169,110,.7)'; c2.lineWidth=1; c2.setLineDash([3,2]); c2.stroke(); c2.setLineDash([]);
+      c2.beginPath(); c2.arc(ax,ay,3,0,Math.PI*2); c2.fillStyle='#c8a96e'; c2.fill();
+      c2.fillStyle='#c8a96e'; c2.textAlign='left'; c2.textBaseline='middle';
+      c2.fillText(`${botB.depthIn.toFixed(2)}"`,ax+4,(by0+ay)/2);
+      c2.fillStyle='#6090a8'; c2.textAlign='center'; c2.textBaseline='top';
+      c2.fillText(`${botB.apexFt.toFixed(2)} ft`,ax,by0+2);
+    }
+
+    c2.fillStyle='#6090a8'; c2.font=`${fs}px "Share Tech Mono"`;
+    c2.textAlign='center'; c2.textBaseline='bottom';
+    c2.fillText(`${foot.toFixed(2)} ft (${(foot*12).toFixed(1)}")`,px2(foot/2),py2(0)-4);
+    // Batten labels: Boom for foot batten of last panel
+    if(p.i===nPanels-1){
+      c2.fillStyle='#c8a96e';
+      c2.textBaseline='top';
+      c2.fillText(`Boom: ${foot.toFixed(2)} ft`,px2(foot/2),py2(s.panelH)+4);
+    }
+    c2.save(); c2.translate(px2(foot)+sc*seamFt*.6+fs,py2(s.panelH/2));
+    c2.rotate(-Math.PI/2); c2.textAlign='center'; c2.textBaseline='middle';
+    c2.fillText(`${s.panelH.toFixed(2)} ft (${(s.panelH*12).toFixed(1)}")`,0,0); c2.restore();
+    c2.fillStyle='#3a5868'; c2.textAlign='left'; c2.textBaseline='bottom';
+    c2.fillText(`SA ${seamIn}"`,2,cH-1);
+    c2.fillStyle='#803028'; c2.textAlign='center'; c2.textBaseline='middle';
+    c2.save(); c2.translate(px2(0)-sc*seamFt*.5,py2(s.panelH/2));
+    c2.rotate(-Math.PI/2); c2.fillText('LUFF',0,0); c2.restore();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════
+function getExportData(idx){
+  const s=computeSail(foot,nPanels);
+  const p=s.panels[idx];
+  const topB=getBattenFull(idx,  s,foot);
+  const botB=getBattenFull(idx+1,s,foot);
+  const seamFt=seamIn/12;
+  const stitchFt=stitchPolygon(idx,s);
+  const cutFt=offsetPolygon(stitchFt,seamFt);
+  const toIn=pts=>pts.map(q=>[q[0]*12,q[1]*12]);
+  return{s,p,topB,botB,seamIn,stitchIn:toIn(stitchFt),cutIn:toIn(cutFt),footIn:foot*12,panelHin:s.panelH*12};
+}
+
+function getTopExportData(idx){
+  const tps=getTopPanelGeometry();
+  if(!tps||tps.length===0) return null;
+  const tp=tps[idx];
+  const seamFt=seamIn/12;
+  // Normalize to flat pattern: translate so pin=(0,0), flip y so upward=positive
+  const pin=tp.pin;
+  const stitchFt=tp.verts.map(v=>[v[0]-pin[0], -(v[1]-pin[1])]);
+  const cutFt=offsetPolygon(stitchFt,seamFt);
+  const toIn=pts=>pts.map(q=>[q[0]*12,q[1]*12]);
+  return{tp,seamIn,stitchIn:toIn(stitchFt),cutIn:toIn(cutFt)};
+}
+
+function exportTopPanel(idx,fmt){
+  const g=getTopExportData(idx);
+  if(!g) return;
+  const isYard=(idx===1);
+  const name=isYard?'sail_F2_yard':'sail_F1_batten';
+  if(fmt==='svg') downloadText(name+'.svg',makeFanPanelSVG(g),'image/svg+xml');
+  if(fmt==='dxf') downloadText(name+'.dxf',makeFanPanelDXF(g),'application/dxf');
+  if(fmt==='gcode') downloadText(name+'.nc',makeFanPanelGcode(g),'text/plain');
+}
+
+function makeFanPanelSVG(g){
+  const{stitchIn,cutIn,tp,seamIn}=g;
+  const aX=cutIn.map(q=>q[0]),aY=cutIn.map(q=>q[1]);
+  const minX=Math.min(...aX)-.5,minY=Math.min(...aY)-.5;
+  const W=Math.max(...aX)-minX+.5,H=Math.max(...aY)-minY+.5;
+  const sh=pts=>pts.map(q=>[q[0]-minX,q[1]-minY]);
+  const label=(tp.i===1)?'Yard Panel (F2)':'Batten Panel (F1)';
+  const cx=sh([stitchIn.reduce((a,b)=>[a[0]+b[0],a[1]+b[1]])])[0].map(v=>v/stitchIn.length);
+  return[
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}in" height="${H.toFixed(3)}in" viewBox="0 0 ${W.toFixed(3)} ${H.toFixed(3)}">`,
+    `<!-- ${label} | SA:${seamIn}" | ${tp.topLen.toFixed(2)} ft @ ${tp.topAngle.toFixed(1)}° units=inches -->`,
+    `<path d="${polyToD(sh(cutIn))}" fill="none" stroke="#0055cc" stroke-width="0.04" stroke-dasharray="0.2,0.1"/>`,
+    `<path d="${polyToD(sh(stitchIn))}" fill="none" stroke="#7090c8" stroke-width="0.05"/>`,
+    `<text x="${(W/2).toFixed(3)}" y="${(H/2).toFixed(3)}" font-family="monospace" font-size="0.45" text-anchor="middle" dominant-baseline="middle" fill="#7090c8">${label}</text>`,
+    '</svg>'
+  ].join('\n');
+}
+
+function makeFanPanelDXF(g){
+  const{stitchIn,cutIn}=g;
+  const L=['  0','SECTION','  2','HEADER','  9','$ACADVER','  1','AC1009','  9','$INSUNITS','  70','1','  0','ENDSEC',
+    '  0','SECTION','  2','TABLES','  0','TABLE','  2','LAYER','  70','2',
+    '  0','LAYER','  2','CUT','  70','0','  62','5','  6','DASHED',
+    '  0','LAYER','  2','STITCH','  70','0','  62','7','  6','CONTINUOUS',
+    '  0','ENDTAB','  0','ENDSEC','  0','SECTION','  2','ENTITIES'];
+  const dl=(x1,y1,x2,y2,lyr)=>L.push('  0','LINE','  8',lyr,' 10',x1.toFixed(4),' 20',y1.toFixed(4),' 30','0.0',' 11',x2.toFixed(4),' 21',y2.toFixed(4),' 31','0.0');
+  const pl=(pts,lyr)=>{for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];dl(a[0],a[1],b[0],b[1],lyr);}};
+  pl(cutIn,'CUT'); pl(stitchIn,'STITCH');
+  L.push('  0','ENDSEC','  0','EOF'); return L.join('\n');
+}
+
+function makeFanPanelGcode(g){
+  const{stitchIn,cutIn,seamIn,tp}=g;
+  const F=60,Fm=100,Zs=.5,Zc=-.1,Zm=-.02;
+  const label=(tp.i===1)?'Yard (F2)':'Batten (F1)';
+  return[
+    `; Fan ${label} | ${tp.topLen.toFixed(2)} ft @ ${tp.topAngle.toFixed(1)}° SA:${seamIn}"`,
+    `G90 G0 Z${Zs}`,'',
+    '; CUT',`G0 X${cutIn[0][0].toFixed(4)} Y${cutIn[0][1].toFixed(4)}`,`G1 Z${Zc} F${F}`,
+    ...cutIn.slice(1).map(q=>`G1 X${q[0].toFixed(4)} Y${q[1].toFixed(4)}`),
+    `G1 X${cutIn[0][0].toFixed(4)} Y${cutIn[0][1].toFixed(4)}`,`G0 Z${Zs}`,'',
+    '; STITCH',`G0 X${stitchIn[0][0].toFixed(4)} Y${stitchIn[0][1].toFixed(4)}`,`G1 Z${Zm} F${Fm}`,
+    ...stitchIn.slice(1).map(q=>`G1 X${q[0].toFixed(4)} Y${q[1].toFixed(4)}`),
+    `G1 X${stitchIn[0][0].toFixed(4)} Y${stitchIn[0][1].toFixed(4)}`,`G0 Z${Zs}`,'','M2'
+  ].join('\n');
+}
+
+function polyToD(pts){return'M '+pts.map(p=>p[0].toFixed(4)+','+p[1].toFixed(4)).join(' L ')+' Z';}
+
+function exportPanel(idx,fmt){
+  const g=getExportData(idx);
+  const name=`sail_P${idx+1}_${g.p.defType}`;
+  if(fmt==='svg') downloadText(name+'.svg',makeMainSVG(g),'image/svg+xml');
+  if(fmt==='dxf') downloadText(name+'.dxf',makeMainDXF(g),'application/dxf');
+  if(fmt==='gcode') downloadText(name+'.nc',makeMainGcode(g),'text/plain');
+}
+
+function exportTopPanel(idx,fmt){
+  const g=getTopExportData(idx);
+  const name=`sail_T${idx+1}_top`;
+  if(fmt==='svg') downloadText(name+'.svg',makeTopSVG(g),'image/svg+xml');
+  if(fmt==='dxf') downloadText(name+'.dxf',makeTopDXF(g),'application/dxf');
+  if(fmt==='gcode') downloadText(name+'.nc',makeTopGcode(g),'text/plain');
+}
+
+function makeMainSVG(g){
+  const{stitchIn,cutIn,footIn,panelHin,seamIn,p,topB,botB}=g;
+  const aX=cutIn.map(q=>q[0]),aY=cutIn.map(q=>q[1]);
+  const minX=Math.min(...aX)-.5,minY=Math.min(...aY)-.5;
+  const W=Math.max(...aX)-minX+.5,H=Math.max(...aY)-minY+.5;
+  const sh=pts=>pts.map(q=>[q[0]-minX,q[1]-minY]);
+  const lT=sh([[0,0]])[0],lB=sh([[0,panelHin]])[0];
+  return[
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}in" height="${H.toFixed(3)}in" viewBox="0 0 ${W.toFixed(3)} ${H.toFixed(3)}">`,
+    `<!-- Panel P${p.i+1} (${p.defType}) units=inches CUT=blue-dashed STITCH=black LUFF=red -->`,
+    `<path d="${polyToD(sh(cutIn))}" fill="none" stroke="#0055cc" stroke-width="0.04" stroke-dasharray="0.2,0.1"/>`,
+    `<path d="${polyToD(sh(stitchIn))}" fill="none" stroke="#222" stroke-width="0.05"/>`,
+    `<line x1="${lT[0].toFixed(3)}" y1="${lT[1].toFixed(3)}" x2="${lB[0].toFixed(3)}" y2="${lB[1].toFixed(3)}" stroke="#cc2200" stroke-width="0.1"/>`,
+    `<text x="${sh([[footIn/2,panelHin/2]])[0][0].toFixed(3)}" y="${sh([[footIn/2,panelHin/2]])[0][1].toFixed(3)}" font-family="monospace" font-size="0.5" text-anchor="middle" dominant-baseline="middle" fill="#555">P${p.i+1} ${p.defType.toUpperCase()}</text>`,
+    `</svg>`
+  ].join('\n');
+}
+
+function downloadText(fn,txt,mime){
+  const b=new Blob([txt],{type:mime}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download=fn; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ═══════════════════════════════════════════════
+// READOUTS + REFRESH
+// ═══════════════════════════════════════════════
+function updateReadouts(){
+  const s=computeSail(foot,nPanels);
+  const tps=getTopPanelGeometry();
+  const area=totalSailArea(s,tps);
+  document.getElementById('rdH').textContent=`${s.height.toFixed(1)} ft`;
+  document.getElementById('rdPH').textContent=`${s.panelH.toFixed(2)} ft`;
+  document.getElementById('rdC').textContent=`${s.defCamberIn.toFixed(1)} in`;
+  document.getElementById('rdAp').textContent=`${(s.defApexRatio*foot).toFixed(2)} ft`;
+  document.getElementById('rdKP').textContent=`P${s.keyIdx+1}`;
+  document.getElementById('rdSA').textContent=`${area.toFixed(1)} ft²`;
+  document.getElementById('sbFoot').textContent=foot.toFixed(1);
+  document.getElementById('sbH').textContent=s.height.toFixed(1);
+  const tpsForCount=getTopPanelGeometry();
+  const totalPanelCount=s.panels.length+tpsForCount.length;
+  document.getElementById('sbN').textContent=showTopPanels?`${totalPanelCount} (${s.panels.length} + fan)`:nPanels;
+  document.getElementById('sbK').textContent=`P${s.keyIdx+1}`;
+  document.getElementById('sbArea').textContent=area.toFixed(1);
+}
+
+function refresh(){
+  updateReadouts();
+  if(currentView==='assembly'){buildPanelButtons();drawAssembly();}
+  else buildPanelView();
+}
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    currentView=t.dataset.view;
+    document.getElementById('view-'+currentView).classList.add('active');
+    document.getElementById('viewLabel').textContent=currentView==='assembly'?'Assembly View':'Panel Patterns';
+    document.getElementById('sbHint').textContent=currentView==='assembly'?'scroll=zoom · drag=pan · dbl-click=fit':'export each panel individually';
+    document.getElementById('asmToggles').style.display=currentView==='assembly'?'':'none';
+    document.getElementById('seamRow').style.display=currentView==='panels'?'':'none';
+    refresh();
+  });
+});
+
+// ═══════════════════════════════════════════════
+// GLOBAL CONTROLS
+// ═══════════════════════════════════════════════
+function syncPair(slId,nmId,isInt,cb){
+  const sl=document.getElementById(slId),nm=document.getElementById(nmId);
+  sl.addEventListener('input',()=>{const v=isInt?parseInt(sl.value):parseFloat(sl.value);nm.value=v;cb(v);});
+  nm.addEventListener('change',()=>{const v=isInt?parseInt(nm.value):parseFloat(nm.value);sl.value=v;cb(v);});
+}
+syncPair('sldFoot','numFoot',false,v=>{foot=v;battens={};deselect();fitToView();syncTopPanelDefaults();buildTopPanelConfigs();refresh();});
+syncPair('sldPanels','numPanels',true,v=>{nPanels=v;battens={};deselect();fitToView();syncTopPanelDefaults();buildTopPanelConfigs();refresh();});
+syncPair('sldSeam','numSeam',false,v=>{seamIn=v;refresh();});
+['chkDims','chkCamber','chkLabels'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',e=>{
+    if(id==='chkDims') showDims=e.target.checked;
+    if(id==='chkCamber') showCamber=e.target.checked;
+    if(id==='chkLabels') showLabels=e.target.checked;
+    drawAssembly();
+  });
+});
+
+// ═══════════════════════════════════════════════
+// PAN / ZOOM
+// ═══════════════════════════════════════════════
+asmWrap.addEventListener('mousedown',e=>{isPanning=true;didPan=false;dragX=e.clientX;dragY=e.clientY;});
+window.addEventListener('mousemove',e=>{
+  if(!isPanning)return;
+  const dx=e.clientX-dragX,dy=e.clientY-dragY;
+  if(Math.abs(dx)>3||Math.abs(dy)>3)didPan=true;
+  vpX+=dx;vpY+=dy;dragX=e.clientX;dragY=e.clientY;
+  if(didPan)drawAssembly();
+});
+window.addEventListener('mouseup',()=>{isPanning=false;});
+asmWrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=asmWrap.getBoundingClientRect();
+  const mx=e.clientX-r.left,my=e.clientY-r.top;
+  const f=e.deltaY<0?1.12:.89;
+  const ns=Math.max(5,Math.min(300,vpScale*f));
+  vpX=mx-(mx-vpX)*(ns/vpScale);vpY=my-(my-vpY)*(ns/vpScale);
+  vpScale=ns;drawAssembly();
+},{passive:false});
+asmWrap.addEventListener('dblclick',()=>{fitToView();drawAssembly();});
+
+// ── Touch pan / pinch-zoom ──
+let activeTouches=[];
+asmWrap.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  activeTouches=[...e.touches];
+  if(e.touches.length===1){
+    isPanning=true;didPan=false;
+    dragX=e.touches[0].clientX;dragY=e.touches[0].clientY;
+  } else {
+    isPanning=false;
+  }
+},{passive:false});
+asmWrap.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===1&&isPanning){
+    const dx=e.touches[0].clientX-dragX,dy=e.touches[0].clientY-dragY;
+    if(Math.abs(dx)>3||Math.abs(dy)>3)didPan=true;
+    vpX+=dx;vpY+=dy;
+    dragX=e.touches[0].clientX;dragY=e.touches[0].clientY;
+    drawAssembly();
+  } else if(e.touches.length===2&&activeTouches.length===2){
+    // Pinch zoom
+    const t1=e.touches[0],t2=e.touches[1];
+    const p1=activeTouches[0],p2=activeTouches[1];
+    const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+    const prevDist=Math.hypot(p2.clientX-p1.clientX,p2.clientY-p1.clientY);
+    if(prevDist>0){
+      const f=dist/prevDist;
+      const r=asmWrap.getBoundingClientRect();
+      const mx=(t1.clientX+t2.clientX)/2-r.left;
+      const my=(t1.clientY+t2.clientY)/2-r.top;
+      const ns=Math.max(5,Math.min(300,vpScale*f));
+      vpX=mx-(mx-vpX)*(ns/vpScale);vpY=my-(my-vpY)*(ns/vpScale);
+      vpScale=ns;drawAssembly();
+    }
+    activeTouches=[...e.touches];
+  }
+},{passive:false});
+asmWrap.addEventListener('touchend',e=>{
+  e.preventDefault();
+  isPanning=false;
+  activeTouches=[...e.touches];
+},{passive:false});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('resize',()=>{if(currentView==='assembly'){fitToView();drawAssembly();}});
+buildTopPanelConfigs();
+fitToView();
+refresh();
+</script>
+</body>
+</html>
